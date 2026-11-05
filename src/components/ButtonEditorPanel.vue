@@ -22,14 +22,8 @@ const props = withDefaults(
   },
 )
 
-const {
-  activeSheet,
-  activeButton,
-  setZoneCount,
-  updateZone,
-  setIndicatorPosition,
-  updateSeparator,
-} = useSheets()
+const { activeSheet, activeButton, setZoneCount, updateZone, updateSeparator } =
+  useSheets()
 
 // Active zone for pagination (0-indexed: 0, 1, or 2)
 const activeTopZone = ref(0)
@@ -192,12 +186,16 @@ function onSetZoneType(
   updateZone(activeButton.value.id, half, zoneIndex, { type })
 }
 
+// Applies to the selected zone only; other zones keep their own position
 function onSetIndicatorPosition(
   half: 'top' | 'bottom',
+  zoneIndex: number,
   position: IndicatorPosition,
 ) {
   if (!activeButton.value) return
-  setIndicatorPosition(activeButton.value.id, half, position)
+  updateZone(activeButton.value.id, half, zoneIndex, {
+    indicatorPosition: position,
+  })
 }
 
 const INDICATOR_POSITIONS: IndicatorPosition[] = ['inner', 'outer']
@@ -329,9 +327,9 @@ function onUpdateSeparator(
               <button
                 v-for="pos in INDICATOR_POSITIONS" :key="pos"
                 class="px-2 py-1 text-xs font-medium transition-colors"
-                :class="activeButton.top.indicatorPosition === pos ? 'bg-blue-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'"
+                :class="(activeButton.top.zones[activeTopZone]?.indicatorPosition ?? activeButton.top.indicatorPosition) === pos ? 'bg-blue-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'"
                 :title="pos === 'inner' ? 'Near center divider' : 'Near button edge'"
-                @click="onSetIndicatorPosition('top', pos)"
+                @click="onSetIndicatorPosition('top', activeTopZone, pos)"
               >{{ indicatorPosLabel(pos) }}</button>
             </div>
           </div>
@@ -477,9 +475,9 @@ function onUpdateSeparator(
               <button
                 v-for="pos in INDICATOR_POSITIONS" :key="pos"
                 class="px-2 py-1 text-xs font-medium transition-colors"
-                :class="activeButton.bottom.indicatorPosition === pos ? 'bg-blue-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'"
+                :class="(activeButton.bottom.zones[activeBotZone]?.indicatorPosition ?? activeButton.bottom.indicatorPosition) === pos ? 'bg-blue-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'"
                 :title="pos === 'inner' ? 'Near center divider' : 'Near button edge'"
-                @click="onSetIndicatorPosition('bottom', pos)"
+                @click="onSetIndicatorPosition('bottom', activeBotZone, pos)"
               >{{ indicatorPosLabel(pos) }}</button>
             </div>
           </div>

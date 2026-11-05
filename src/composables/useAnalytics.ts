@@ -23,6 +23,8 @@ function sheetStats(sheet: Sheet) {
     )
       hasOuter = true
     for (const zone of [...btn.top.zones, ...btn.bottom.zones]) {
+      if (zone.indicatorPosition === 'inner') hasInner = true
+      if (zone.indicatorPosition === 'outer') hasOuter = true
       if (zone.label) hasLabel = true
       if (zone.icon) hasIcon = true
     }

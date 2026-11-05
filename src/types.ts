@@ -18,6 +18,8 @@ export interface ActionZone {
   iconSize: number // mm, default 12
   iconColor: string // hex color, default '#000000'
   iconRotation: number // degrees, default 0
+  // Per-zone override of the half's indicatorPosition (unset = follow the half)
+  indicatorPosition?: IndicatorPosition
   // Label
   label?: string
   labelSize?: number // mm, default 3

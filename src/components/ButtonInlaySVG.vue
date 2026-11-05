@@ -37,6 +37,8 @@ export type { ButtonType }
 export interface ZoneConfig {
   /** MDI icon path string (from @mdi/js) */
   icon?: string
+  /** Overrides the half-level indicator position for this zone only */
+  indicatorPosition?: 'inner' | 'outer'
   /** Action type indicator shown at bottom of zone */
   indicator?: IndicatorType
   /** Icon size in mm — overrides component-level ICON_SIZE */
@@ -662,14 +664,14 @@ function computeLabelY(zone: Zone, cfg: ZoneConfig): number {
 
         <circle
           v-if="topZoneConfig[i]?.indicator === 'dot'"
-          :cx="indicatorPos(zone, 'top', topIndicatorPos).cx"
-          :cy="indicatorPos(zone, 'top', topIndicatorPos).cy"
+          :cx="indicatorPos(zone, 'top', topZoneConfig[i]?.indicatorPosition ?? topIndicatorPos).cx"
+          :cy="indicatorPos(zone, 'top', topZoneConfig[i]?.indicatorPosition ?? topIndicatorPos).cy"
           :r="DOT_R"
           :fill="iconColor"
         />
         <g v-else-if="topZoneConfig[i]?.indicator === 'double-dot' || topZoneConfig[i]?.indicator === 'triple-dot'">
           <circle
-            v-for="(d, di) in dotPositions(zone, 'top', topIndicatorPos, topZoneConfig[i]?.indicator === 'triple-dot' ? 3 : 2)"
+            v-for="(d, di) in dotPositions(zone, 'top', topZoneConfig[i]?.indicatorPosition ?? topIndicatorPos, topZoneConfig[i]?.indicator === 'triple-dot' ? 3 : 2)"
             :key="di"
             :cx="d.cx"
             :cy="d.cy"
@@ -678,10 +680,10 @@ function computeLabelY(zone: Zone, cfg: ZoneConfig): number {
         </g>
         <rect
           v-else-if="topZoneConfig[i]?.indicator === 'dash'"
-          :x="dashRect(zone, 'top', topIndicatorPos).x"
-          :y="dashRect(zone, 'top', topIndicatorPos).y"
-          :width="dashRect(zone, 'top', topIndicatorPos).width"
-          :height="dashRect(zone, 'top', topIndicatorPos).height"
+          :x="dashRect(zone, 'top', topZoneConfig[i]?.indicatorPosition ?? topIndicatorPos).x"
+          :y="dashRect(zone, 'top', topZoneConfig[i]?.indicatorPosition ?? topIndicatorPos).y"
+          :width="dashRect(zone, 'top', topZoneConfig[i]?.indicatorPosition ?? topIndicatorPos).width"
+          :height="dashRect(zone, 'top', topZoneConfig[i]?.indicatorPosition ?? topIndicatorPos).height"
           :rx="DASH_R" :ry="DASH_R"
           :fill="iconColor"
         />
@@ -713,14 +715,14 @@ function computeLabelY(zone: Zone, cfg: ZoneConfig): number {
 
         <circle
           v-if="botZoneConfig[i]?.indicator === 'dot'"
-          :cx="indicatorPos(zone, 'bottom', botIndicatorPos).cx"
-          :cy="indicatorPos(zone, 'bottom', botIndicatorPos).cy"
+          :cx="indicatorPos(zone, 'bottom', botZoneConfig[i]?.indicatorPosition ?? botIndicatorPos).cx"
+          :cy="indicatorPos(zone, 'bottom', botZoneConfig[i]?.indicatorPosition ?? botIndicatorPos).cy"
           :r="DOT_R"
           :fill="iconColor"
         />
         <g v-else-if="botZoneConfig[i]?.indicator === 'double-dot' || botZoneConfig[i]?.indicator === 'triple-dot'">
           <circle
-            v-for="(d, di) in dotPositions(zone, 'bottom', botIndicatorPos, botZoneConfig[i]?.indicator === 'triple-dot' ? 3 : 2)"
+            v-for="(d, di) in dotPositions(zone, 'bottom', botZoneConfig[i]?.indicatorPosition ?? botIndicatorPos, botZoneConfig[i]?.indicator === 'triple-dot' ? 3 : 2)"
             :key="di"
             :cx="d.cx"
             :cy="d.cy"
@@ -729,10 +731,10 @@ function computeLabelY(zone: Zone, cfg: ZoneConfig): number {
         </g>
         <rect
           v-else-if="botZoneConfig[i]?.indicator === 'dash'"
-          :x="dashRect(zone, 'bottom', botIndicatorPos).x"
-          :y="dashRect(zone, 'bottom', botIndicatorPos).y"
-          :width="dashRect(zone, 'bottom', botIndicatorPos).width"
-          :height="dashRect(zone, 'bottom', botIndicatorPos).height"
+          :x="dashRect(zone, 'bottom', botZoneConfig[i]?.indicatorPosition ?? botIndicatorPos).x"
+          :y="dashRect(zone, 'bottom', botZoneConfig[i]?.indicatorPosition ?? botIndicatorPos).y"
+          :width="dashRect(zone, 'bottom', botZoneConfig[i]?.indicatorPosition ?? botIndicatorPos).width"
+          :height="dashRect(zone, 'bottom', botZoneConfig[i]?.indicatorPosition ?? botIndicatorPos).height"
           :rx="DASH_R" :ry="DASH_R"
           :fill="iconColor"
         />

@@ -166,6 +166,7 @@ function actionTypeToIndicator(type: ActionType): IndicatorType {
 
 function toZoneConfigs(zones: ActionZone[]): ZoneConfig[] {
   return zones.map((z) => ({
+    indicatorPosition: z.indicatorPosition,
     icon: z.icon ?? undefined,
     indicator: actionTypeToIndicator(z.type),
     iconSize: z.iconSize,
