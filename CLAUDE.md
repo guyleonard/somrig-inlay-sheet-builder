@@ -10,7 +10,7 @@ When you learn something non-obvious about this project that future sessions wou
 
 ## Project Overview
 
-**Somrig Inlay Sheet Builder** — a browser-based tool for designing printable button inlays for smart-home remotes (IKEA Somrig & Bilresa, Philips Hue Dimmer v1/v2, Sonoff SNZB-01M/01P). Exports SVG, PDF and (Somrig/Bilresa only) 3MF.
+**Somrig Inlay Sheet Builder** — a browser-based tool for designing printable button inlays for smart-home remotes (IKEA Somrig & Bilresa, Philips Hue Dimmer v1 / v2 older / v2 newer, Sonoff SNZB-01M/01P). Exports SVG, PDF and (Somrig/Bilresa only) 3MF.
 
 - **Repo:** `somrig-inlay-sheet-builder`
 - **Linear:** team `LQM` (Personal, issue prefix `LQM-`), project `P-LQM-9` (Somrig Button Inlay Designer). Pass the project ID, not the name, when creating issues.

@@ -45,6 +45,13 @@ function createDefaultZones(count: number): ActionZone[] {
   )
 }
 
+function defaultHorizontalSeparator(buttonType: ButtonType): SeparatorStyle {
+  return {
+    ...DEFAULT_SEPARATOR,
+    ...BUTTON_MODELS[buttonType].defaultSeparators?.horizontal,
+  }
+}
+
 function createDefaultButtonInlay(
   id: string,
   buttonType: ButtonType = 'somrig',
@@ -54,7 +61,7 @@ function createDefaultButtonInlay(
     id,
     top: { zones: createDefaultZones(topCount), indicatorPosition: 'inner' },
     bottom: { zones: createDefaultZones(botCount), indicatorPosition: 'inner' },
-    horizontalSeparator: { ...DEFAULT_SEPARATOR },
+    horizontalSeparator: defaultHorizontalSeparator(buttonType),
     verticalSeparator: { ...DEFAULT_SEPARATOR },
   }
 }
@@ -397,6 +404,7 @@ export function useSheets() {
   function setButtonType(sheetId: string, buttonType: ButtonType): void {
     const sheet = sheets.value.find((s) => s.id === sheetId)
     if (!sheet) return
+    const previousType = sheet.buttonType
     sheet.buttonType = buttonType
     // Untouched buttons adopt the new model's default zone layout; edited
     // buttons keep their content.
@@ -408,6 +416,16 @@ export function useSheets() {
       if (!pristine) continue
       btn.top.zones = createDefaultZones(topCount)
       btn.bottom.zones = createDefaultZones(botCount)
+      // Likewise a centre divider still at the old model's default
+      const old = defaultHorizontalSeparator(previousType)
+      const cur = btn.horizontalSeparator
+      if (
+        cur.thickness === old.thickness &&
+        cur.color === old.color &&
+        cur.style === old.style
+      ) {
+        btn.horizontalSeparator = defaultHorizontalSeparator(buttonType)
+      }
     }
   }
 

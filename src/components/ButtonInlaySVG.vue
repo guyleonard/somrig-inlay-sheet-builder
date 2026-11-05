@@ -166,6 +166,14 @@ interface Zone {
  * Landscape (BILRESA): halfStart = xStart, halfLength = half width.
  *                      Zones are horizontal slices (different Y, same X span).
  */
+/** Zone heights as fractions of a stacked half (equal unless the model says so). */
+function stackedFractions(count: ZoneCount, half: 0 | 1): number[] {
+  const fractions = config.value.zoneFractions?.[half]
+  return fractions?.length === count
+    ? fractions
+    : Array.from({ length: count }, () => 1 / count)
+}
+
 function computeHalfZones(
   count: ZoneCount,
   halfStart: number,
@@ -174,15 +182,13 @@ function computeHalfZones(
 ): Zone[] {
   const cfg = config.value
   if (cfg.layout === 'stacked') {
-    const rh = halfLength / count
-    return Array.from({ length: count }, (_, row) => ({
-      x: 0,
-      y: halfStart + row * rh,
-      w: cfg.W,
-      h: rh,
-      cx: cfg.W / 2,
-      cy: halfStart + row * rh + rh / 2,
-    }))
+    let y = halfStart
+    return stackedFractions(count, half).map((f) => {
+      const h = halfLength * f
+      const zone = { x: 0, y, w: cfg.W, h, cx: cfg.W / 2, cy: y + h / 2 }
+      y += h
+      return zone
+    })
   }
   if (cfg.layout === 'portrait') {
     const yStart = halfStart
@@ -309,10 +315,13 @@ function halfSubDividers(
   const cfg = config.value
   if (count === 1) return []
   if (cfg.layout === 'stacked') {
-    return Array.from(
-      { length: count - 1 },
-      (_, i) => start + (length / count) * (i + 1),
-    )
+    let acc = 0
+    return stackedFractions(count, half)
+      .slice(0, -1)
+      .map((f) => {
+        acc += f
+        return start + length * acc
+      })
   }
   if (cfg.layout === 'portrait') {
     return count === 2

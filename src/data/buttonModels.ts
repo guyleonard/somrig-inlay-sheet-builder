@@ -9,11 +9,14 @@
  *  - 'stacked'   halves are top/bottom, zones inside a half split top/bottom
  *                (e.g. 2 + 2 zones = four stacked buttons).
  */
+import type { SeparatorStyle } from '../types'
+
 export type ButtonType =
   | 'somrig'
   | 'bilresa'
   | 'hue-dimmer-v1'
-  | 'hue-dimmer-v2'
+  | 'hue-dimmer-v2-older'
+  | 'hue-dimmer-v2-newer'
   | 'sonoff-snzb-01m'
   | 'sonoff-snzb-01p'
 
@@ -27,6 +30,14 @@ export interface ButtonModel {
   layout: ButtonLayout
   dividerPos: number // Y for portrait/stacked, X for landscape
   zoneCenter: number // X for portrait, Y for landscape (2-zone split)
+  /**
+   * 'stacked' only: height of each zone as a fraction of its half, per half
+   * [top, bottom]. Used when the array length matches the half's zone count;
+   * otherwise zones are equal.
+   */
+  zoneFractions?: [number[], number[]]
+  /** Separator defaults for fresh buttons (user can still change them). */
+  defaultSeparators?: { horizontal?: Partial<SeparatorStyle> }
   /** Per-half override of zoneCenter [top/left half, bottom/right half] for staggered splits. */
   zoneCenters?: [number, number]
   /** Number of halves (physical buttons groups) the model has: 1 hides the bottom/right half. */
@@ -95,30 +106,62 @@ export const BUTTON_MODELS: Record<ButtonType, ButtonModel> = {
     has3mf: true,
     approximate: false,
   },
-  // Hue Dimmer Switch: four stacked buttons (on / brighter / dimmer / off).
-  // 35 × 92 mm body per Philips' spec sheet.
+  // Hue Dimmer v1: four separate buttons — on (≈32%), brighter (≈18.5%),
+  // dimmer (≈18.5%), off (≈31%). 35 × 92 mm body per Philips' spec sheet;
+  // proportions measured from docs/reference/hue_remote_v1.jpeg.
   'hue-dimmer-v1': {
     label: 'Hue Dimmer v1',
     W: 35,
     H: 92,
-    outlinePath: roundedRect(35, 92, 3),
+    outlinePath: roundedRect(35, 92, 2),
     layout: 'stacked',
     dividerPos: 46,
     zoneCenter: 17.5,
+    zoneFractions: [
+      [0.63, 0.37],
+      [0.37, 0.63],
+    ],
     halves: 2,
     defaultZones: [2, 2],
     has3mf: false,
     approximate: true,
   },
-  // The v2 housing is only ~0.2 mm wider than v1; same four-button layout.
-  'hue-dimmer-v2': {
-    label: 'Hue Dimmer v2',
-    W: 35.3,
-    H: 92,
-    outlinePath: roundedRect(35.3, 92, 3),
+  // Hue Dimmer v2: top button, a middle rocker (two actions, so still two
+  // zones) and a bottom button. The rocker's centre divider is hidden by
+  // default. Sizes from the r/Hue thread on the two housing revisions;
+  // proportions measured from docs/reference/hue_remote_v2.jpeg; corner
+  // radius is an estimate.
+  'hue-dimmer-v2-older': {
+    label: 'Hue Dimmer v2 (older)',
+    W: 35.08,
+    H: 91.59,
+    outlinePath: roundedRect(35.08, 91.59, 6),
     layout: 'stacked',
-    dividerPos: 46,
-    zoneCenter: 17.65,
+    dividerPos: 45.795,
+    zoneCenter: 17.54,
+    zoneFractions: [
+      [0.647, 0.353],
+      [0.353, 0.647],
+    ],
+    defaultSeparators: { horizontal: { thickness: 0 } },
+    halves: 2,
+    defaultZones: [2, 2],
+    has3mf: false,
+    approximate: true,
+  },
+  'hue-dimmer-v2-newer': {
+    label: 'Hue Dimmer v2 (newer)',
+    W: 35.31,
+    H: 91.88,
+    outlinePath: roundedRect(35.31, 91.88, 6),
+    layout: 'stacked',
+    dividerPos: 45.94,
+    zoneCenter: 17.655,
+    zoneFractions: [
+      [0.647, 0.353],
+      [0.353, 0.647],
+    ],
+    defaultSeparators: { horizontal: { thickness: 0 } },
     halves: 2,
     defaultZones: [2, 2],
     has3mf: false,
