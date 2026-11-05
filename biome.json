@@ -6,7 +6,13 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["**", "!!**/dist", "!!src/data/mdiAllIconsData.json"]
+    "includes": [
+      "**",
+      "!!**/dist",
+      "!!src/data/mdiAllIconsData.json",
+      "!!src/data/faIconsData.json",
+      "!!src/data/emojiIconsData.json"
+    ]
   },
   "formatter": {
     "enabled": true,

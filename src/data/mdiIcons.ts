@@ -48,6 +48,8 @@ import {
 export interface IconOption {
   name: string
   path: string
+  /** Extra space-separated search terms (not displayed) */
+  keywords?: string
 }
 
 export const MDI_ICONS: IconOption[] = [

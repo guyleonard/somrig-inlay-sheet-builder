@@ -72,6 +72,7 @@ tsconfig.node.json      # Node/vite TS config
 - **Dark mode:** class-based (`.dark` on `<html>`), toggled via `useDarkMode` composable. Stored in `localStorage` under key `color-scheme`. Dark variant defined as `@custom-variant dark (&:where(.dark, .dark *))` in `style.css`.
 - **Icons:** Import SVG path strings from `@mdi/js` (e.g. `import { mdiWeatherNight } from '@mdi/js'`), render as `<svg viewBox="0 0 24 24"><path :d="iconPath" /></svg>`.
 - **Adding a remote:** add it to `src/data/buttonModels.ts` only (size, outline, layout, default zones, `has3mf`). Dimensions from listings must be marked `approximate: true`. See `.claude/button-models.md`.
+- **Icons:** three sets, all normalised to 24×24 paths; see `.claude/icons.md`. Generated data files are not Biome-formatted. Credits live in `THIRD_PARTY_NOTICES.md`.
 - **Press types:** `single | double | triple | hold | none` → one/two/three dots, dash, nothing.
 - **Node:** Vite 8 needs Node ≥ 20.19 / 22.12 (the machine default may be older; use nvm's 22.x).
 - **No router yet** — single-page app, no Vue Router installed.
@@ -140,3 +141,4 @@ The workflow:
 | `.claude/stack.md` | Tailwind v4 setup details, MDI usage patterns, Vite 8 notes |
 | `.claude/3mf-export.md` | 3MF pipeline, per-colour grouping, Bambu colour handling |
 | `.claude/button-models.md` | Remote registry, layouts, measured geometry, press types |
+| `.claude/icons.md` | Icon sets (Material / Font Awesome / Emoji), generators, licences, gotchas |

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { mdiClose, mdiMagnify } from '@mdi/js'
 import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
+import { ICON_SETS, type IconSetId } from '../data/iconSets'
 import type { IconOption } from '../data/mdiIcons'
 
 const props = defineProps<{
@@ -13,18 +14,36 @@ const emit = defineEmits<{
   select: [path: string]
 }>()
 
-// --- Icon data (lazy-loaded on first open) ---
+// --- Icon data (each set lazy-loaded the first time it is shown) ---
+const activeSetId = ref<IconSetId>('mdi')
+const activeSet = computed(
+  () => ICON_SETS.find((s) => s.id === activeSetId.value) ?? ICON_SETS[0],
+)
+const loadedSets = new Map<IconSetId, IconOption[]>()
 const allIcons = ref<IconOption[]>([])
 const iconsLoading = ref(false)
-const iconsLoaded = ref(false)
 
 async function loadIcons() {
-  if (iconsLoaded.value || iconsLoading.value) return
-  iconsLoading.value = true
-  const { MDI_ALL_ICONS } = await import('../data/mdiAllIcons')
-  allIcons.value = MDI_ALL_ICONS
-  iconsLoaded.value = true
+  const id = activeSetId.value
+  let icons = loadedSets.get(id)
+  if (!icons) {
+    iconsLoading.value = true
+    icons = await activeSet.value.load()
+    loadedSets.set(id, icons)
+  }
+  // Ignore a stale result if the user switched tabs while loading
+  if (id !== activeSetId.value) return
+  allIcons.value = icons
   iconsLoading.value = false
+}
+
+function selectSet(id: IconSetId) {
+  if (id === activeSetId.value) return
+  activeSetId.value = id
+  allIcons.value = []
+  if (gridScrollRef.value) gridScrollRef.value.scrollTop = 0
+  scrollTop.value = 0
+  loadIcons()
 }
 
 // --- Search with debounce ---
@@ -45,7 +64,19 @@ watch(searchInput, (val) => {
 const filteredIcons = computed(() => {
   const q = search.value.trim().toLowerCase()
   if (!q) return allIcons.value
-  return allIcons.value.filter((i) => i.name.toLowerCase().includes(q))
+  // Names match anywhere; keywords match on word starts so "cat" doesn't hit "category"
+  const multiWord = q.includes(' ')
+  return allIcons.value.filter(
+    (i) =>
+      i.name.toLowerCase().includes(q) ||
+      (i.keywords &&
+        (multiWord
+          ? i.keywords.toLowerCase().includes(q)
+          : i.keywords
+              .toLowerCase()
+              .split(' ')
+              .some((w) => w.startsWith(q)))),
+  )
 })
 
 // --- Virtual scrolling ---
@@ -166,6 +197,23 @@ function handleClose() {
           </div>
         </div>
 
+        <!-- Icon set tabs -->
+        <div class="flex border-b border-gray-200 dark:border-gray-700 shrink-0">
+          <button
+            v-for="set in ICON_SETS"
+            :key="set.id"
+            class="flex-1 px-3 py-1.5 text-xs font-medium transition-colors"
+            :class="
+              activeSetId === set.id
+                ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+                : 'text-gray-500 hover:text-gray-800 dark:hover:text-white'
+            "
+            @click="selectSet(set.id)"
+          >
+            {{ set.label }}
+          </button>
+        </div>
+
         <!-- Loading state -->
         <div
           v-if="iconsLoading"
@@ -198,8 +246,8 @@ function handleClose() {
             >
               <div class="grid grid-cols-6 gap-1">
                 <button
-                  v-for="icon in visibleIcons"
-                  :key="icon.name"
+                  v-for="(icon, i) in visibleIcons"
+                  :key="startRow * COLS + i"
                   :title="icon.name"
                   class="flex flex-col items-center justify-center gap-1 p-1.5 rounded-lg transition-colors group h-[72px]"
                   :class="
@@ -233,10 +281,13 @@ function handleClose() {
         <!-- Result count footer -->
         <div
           v-if="!iconsLoading && allIcons.length > 0"
-          class="px-4 py-1.5 border-t border-gray-200 dark:border-gray-700 shrink-0"
+          class="px-4 py-1.5 border-t border-gray-200 dark:border-gray-700 shrink-0 flex items-center justify-between gap-3"
         >
-          <span class="text-xs text-gray-400">
+          <span class="text-xs text-gray-400 shrink-0">
             {{ filteredIcons.length.toLocaleString() }} icon{{ filteredIcons.length === 1 ? '' : 's' }}
+          </span>
+          <span class="text-[10px] text-gray-400 truncate" :title="activeSet.credit">
+            {{ activeSet.credit }}
           </span>
         </div>
       </div>
