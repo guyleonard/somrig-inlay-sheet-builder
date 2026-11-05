@@ -10,7 +10,7 @@ When you learn something non-obvious about this project that future sessions wou
 
 ## Project Overview
 
-**Somrig Inlay Sheet Builder** — a browser-based tool for building inlay sheets (likely for woodworking/crafts). Currently in early scaffold phase.
+**Somrig Inlay Sheet Builder** — a browser-based tool for designing printable button inlays for smart-home remotes (IKEA Somrig & Bilresa, Philips Hue Dimmer v1/v2, Sonoff SNZB-01M/01P). Exports SVG, PDF and (Somrig/Bilresa only) 3MF.
 
 - **Repo:** `somrig-inlay-sheet-builder`
 - **Linear:** team `LQM` (Personal, issue prefix `LQM-`), project `P-LQM-9` (Somrig Button Inlay Designer). Pass the project ID, not the name, when creating issues.
@@ -44,9 +44,16 @@ src/
   style.css             # Global styles — @import "tailwindcss" + dark variant
   components/
     AppHeader.vue       # Header with dark mode toggle button
+    ButtonInlaySVG.vue  # Renders one inlay (all layouts) as SVG
+    ButtonEditorPanel.vue  # Zone / icon / label / separator editor
   composables/
     useDarkMode.ts      # Dark mode state (localStorage + prefers-color-scheme)
+    useSheets.ts        # Sheets/buttons state, persistence, save/load
+    use3mfDownload.ts   # 3MF export (see .claude/3mf-export.md)
+  data/
+    buttonModels.ts     # Single source of truth for every supported remote
   assets/               # Static assets (hero.png, vite.svg, vue.svg)
+docs/reference/         # Reference images used to measure remote geometry
 public/
   favicon.svg
   icons.svg
@@ -64,6 +71,9 @@ tsconfig.node.json      # Node/vite TS config
 
 - **Dark mode:** class-based (`.dark` on `<html>`), toggled via `useDarkMode` composable. Stored in `localStorage` under key `color-scheme`. Dark variant defined as `@custom-variant dark (&:where(.dark, .dark *))` in `style.css`.
 - **Icons:** Import SVG path strings from `@mdi/js` (e.g. `import { mdiWeatherNight } from '@mdi/js'`), render as `<svg viewBox="0 0 24 24"><path :d="iconPath" /></svg>`.
+- **Adding a remote:** add it to `src/data/buttonModels.ts` only (size, outline, layout, default zones, `has3mf`). Dimensions from listings must be marked `approximate: true`. See `.claude/button-models.md`.
+- **Press types:** `single | double | triple | hold | none` → one/two/three dots, dash, nothing.
+- **Node:** Vite 8 needs Node ≥ 20.19 / 22.12 (the machine default may be older; use nvm's 22.x).
 - **No router yet** — single-page app, no Vue Router installed.
 - **No state management yet** — no Pinia installed.
 
@@ -129,3 +139,4 @@ The workflow:
 |------|-------|
 | `.claude/stack.md` | Tailwind v4 setup details, MDI usage patterns, Vite 8 notes |
 | `.claude/3mf-export.md` | 3MF pipeline, per-colour grouping, Bambu colour handling |
+| `.claude/button-models.md` | Remote registry, layouts, measured geometry, press types |

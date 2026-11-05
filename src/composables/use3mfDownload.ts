@@ -33,6 +33,7 @@ import earcut from 'earcut'
 import * as fflate from 'fflate'
 import * as opentype from 'opentype.js'
 import * as polygonClipping from 'polygon-clipping'
+import type { ButtonType } from '../data/buttonModels'
 
 // Depth of the icon extrusion below the face surface (mm)
 const EXTRUDE_H = 0.4
@@ -596,7 +597,7 @@ function collectIconGroups(
         )
         break
 
-      // ── Dot / double-dot indicators ────────────────────────────────────────
+      // ── Dot / double-dot / triple-dot indicators ────────────────────────────────────────
       case 'circle': {
         const cx = parseFloat(el.getAttribute('cx') ?? '0')
         const cy = parseFloat(el.getAttribute('cy') ?? '0')
@@ -857,7 +858,7 @@ ${buildItem}
 export function use3mfDownload() {
   async function download3mf(
     svgEl: SVGSVGElement,
-    buttonType: 'somrig' | 'bilresa',
+    buttonType: ButtonType,
     filename = 'button-inlay.3mf',
   ) {
     const [font, stlBuf] = await Promise.all([

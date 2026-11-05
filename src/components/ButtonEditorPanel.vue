@@ -2,6 +2,7 @@
 import { mdiChevronDown, mdiChevronUp, mdiImageOffOutline } from '@mdi/js'
 import { computed, ref, watch } from 'vue'
 import { useSheets } from '../composables/useSheets'
+import { BUTTON_MODELS } from '../data/buttonModels'
 import type {
   ActionType,
   ActionZone,
@@ -22,6 +23,7 @@ const props = withDefaults(
 )
 
 const {
+  activeSheet,
   activeButton,
   setZoneCount,
   updateZone,
@@ -39,6 +41,14 @@ const activeBotZoneTab = ref<'icon' | 'label'>('icon')
 
 // Active tab for mobile (top, bottom, or separators)
 const activeHalf = ref<'top' | 'bottom' | 'separators'>('top')
+
+// Single-button models (e.g. Sonoff SNZB-01P) have no bottom half
+const hasBottomHalf = computed(
+  () => BUTTON_MODELS[activeSheet.value?.buttonType ?? 'somrig'].halves === 2,
+)
+watch(hasBottomHalf, (has) => {
+  if (!has && activeHalf.value === 'bottom') activeHalf.value = 'top'
+})
 
 // Watch for button changes and reset zone indices if out of bounds
 watch(activeButton, (newButton) => {
@@ -95,6 +105,7 @@ function clearIcon(half: 'top' | 'bottom', zoneIndex: number) {
 function actionTypeLabel(type: ActionType): string {
   if (type === 'single') return 'Single'
   if (type === 'double') return 'Double'
+  if (type === 'triple') return 'Triple'
   if (type === 'hold') return 'Hold'
   return 'None'
 }
@@ -106,7 +117,13 @@ const botZoneCount = computed(
   () => (activeButton.value?.bottom.zones.length ?? 1) as 1 | 2 | 3,
 )
 
-const ACTION_TYPES: ActionType[] = ['single', 'double', 'hold', 'none']
+const ACTION_TYPES: ActionType[] = [
+  'single',
+  'double',
+  'triple',
+  'hold',
+  'none',
+]
 
 function onSelectZone(half: 'top' | 'bottom', zoneIndex: number) {
   // Just switch to the selected zone, don't change zone count
@@ -241,6 +258,7 @@ function onUpdateSeparator(
           Top Half
         </button>
         <button
+          v-if="hasBottomHalf"
           class="flex-1 px-4 py-1 text-sm font-medium transition-colors"
           :class="
             activeHalf === 'bottom'
@@ -333,6 +351,7 @@ function onUpdateSeparator(
                   >
                     <svg v-if="t === 'single'" viewBox="0 0 24 24" class="w-4 h-4" fill="currentColor"><circle cx="12" cy="12" r="4" /></svg>
                     <svg v-else-if="t === 'double'" viewBox="0 0 24 24" class="w-4 h-4" fill="currentColor"><circle :cx="12+7" cy="12" r="4" /><circle :cx="12-7" cy="12" r="4" /></svg>
+                    <svg v-else-if="t === 'triple'" viewBox="0 0 24 24" class="w-4 h-4" fill="currentColor"><circle cx="12" cy="12" r="3.2" /><circle cx="3.8" cy="12" r="3.2" /><circle cx="20.2" cy="12" r="3.2" /></svg>
                     <svg v-else-if="t === 'hold'" viewBox="0 0 24 24" class="w-4 h-4" fill="currentColor"><rect x="2" y="8" width="20" height="8" rx="4" ry="4" /></svg>
                     <span v-else-if="t === 'none'" class="flex items-center h-4 text-xs">none</span>
                   </button>
@@ -419,7 +438,7 @@ function onUpdateSeparator(
 
         <!-- Bottom half -->
         <section
-          v-if="layout === 'horizontal' || activeHalf === 'bottom'"
+          v-if="hasBottomHalf && (layout === 'horizontal' || activeHalf === 'bottom')"
           :class="layout === 'horizontal' ? 'space-y-4' : ''"
         >
           <!-- Bottom Half header (horizontal only) -->
@@ -479,6 +498,7 @@ function onUpdateSeparator(
                   >
                     <svg v-if="t === 'single'" viewBox="0 0 24 24" class="w-4 h-4" fill="currentColor"><circle cx="12" cy="12" r="4" /></svg>
                     <svg v-else-if="t === 'double'" viewBox="0 0 24 24" class="w-4 h-4" fill="currentColor"><circle :cx="12+7" cy="12" r="4" /><circle :cx="12-7" cy="12" r="4" /></svg>
+                    <svg v-else-if="t === 'triple'" viewBox="0 0 24 24" class="w-4 h-4" fill="currentColor"><circle cx="12" cy="12" r="3.2" /><circle cx="3.8" cy="12" r="3.2" /><circle cx="20.2" cy="12" r="3.2" /></svg>
                     <svg v-else-if="t === 'hold'" viewBox="0 0 24 24" class="w-4 h-4" fill="currentColor"><rect x="2" y="8" width="20" height="8" rx="4" ry="4" /></svg>
                     <span v-else-if="t === 'none'" class="flex items-center h-4 text-xs">none</span>
                                     </button>

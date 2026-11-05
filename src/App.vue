@@ -25,13 +25,8 @@ import { useDonationPrompt } from './composables/useDonationPrompt'
 import { usePdfDownload } from './composables/usePdfDownload'
 import { useSheets } from './composables/useSheets'
 import { useSvgDownload } from './composables/useSvgDownload'
+import { BUTTON_MODELS, BUTTON_TYPES } from './data/buttonModels'
 import type { ActionType, ActionZone, ButtonType } from './types'
-
-// Physical dimensions per button type (mm)
-const BUTTON_DIMS: Record<ButtonType, { W: number; H: number }> = {
-  somrig: { W: 41.2, H: 71.9 },
-  bilresa: { W: 36.3, H: 63.3 },
-}
 
 const { init } = useDarkMode()
 onMounted(() => {
@@ -72,7 +67,8 @@ const {
 const activeButtonType = computed<ButtonType>(
   () => activeSheet.value?.buttonType ?? 'somrig',
 )
-const buttonDims = computed(() => BUTTON_DIMS[activeButtonType.value])
+const activeModel = computed(() => BUTTON_MODELS[activeButtonType.value])
+const buttonDims = activeModel
 
 // Mobile navigation
 const carouselRef = ref<HTMLElement | null>(null)
@@ -163,6 +159,7 @@ const fillColor = '#ffffff'
 function actionTypeToIndicator(type: ActionType): IndicatorType {
   if (type === 'single') return 'dot'
   if (type === 'double') return 'double-dot'
+  if (type === 'triple') return 'triple-dot'
   if (type === 'hold') return 'dash'
   return 'none'
 }
@@ -322,14 +319,14 @@ async function downloadSheetPdfAction() {
           <!-- Model group -->
           <div class="inline-flex rounded-md border border-gray-200 dark:border-gray-700 overflow-hidden">
             <button
-              v-for="bt in (['somrig', 'bilresa'] as ButtonType[])"
+              v-for="bt in BUTTON_TYPES"
               :key="bt"
               @click="setButtonType(activeSheetId, bt)"
-              class="px-2.5 py-1 text-xs transition-colors capitalize"
+              class="px-2.5 py-1 text-xs transition-colors"
               :class="activeButtonType === bt
                 ? 'bg-blue-600 text-white'
                 : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'"
-            >{{ bt }}</button>
+            >{{ BUTTON_MODELS[bt].label }}</button>
           </div>
 
           <div class="h-4 w-px bg-gray-300 dark:bg-gray-600"></div>
@@ -427,6 +424,7 @@ async function downloadSheetPdfAction() {
                     SVG
                   </button>
                   <button
+                    v-if="activeModel.has3mf"
                     @click="download3mfForButton(btn.id)"
                     class="flex items-center gap-0.5 px-1.5 h-6 rounded-full bg-white/90 dark:bg-gray-800/90 shadow text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                     title="Download 3MF (plate + one part per colour, ready for Bambu Studio multi-colour)"
@@ -557,6 +555,7 @@ async function downloadSheetPdfAction() {
                 SVG
               </button>
               <button
+                v-if="activeModel.has3mf"
                 @click="download3mfForButton(btn.id)"
                 class="flex items-center gap-0.5 px-1.5 h-6 rounded-full bg-white/90 dark:bg-gray-800/90 shadow text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 title="Download 3MF (plate + one part per colour, ready for Bambu Studio multi-colour)"

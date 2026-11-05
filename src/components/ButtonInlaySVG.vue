@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { BUTTON_MODELS, type ButtonType } from '../data/buttonModels'
 /**
  * ButtonInlaySVG — renders a button inlay as an SVG.
  *
@@ -13,13 +14,25 @@ import { computed } from 'vue'
  *   Stadium outline (fully-rounded rectangle, r=18.15mm). Zones split top/bottom
  *   within each left/right half. 'top' prop/half = left; 'bottom' = right.
  *
- * Indicators (dot/dash/double-dot) are positioned near the inner or outer edge
+ * 'hue-dimmer-v1' / 'hue-dimmer-v2' — portrait 35 × 92 mm, 'stacked' layout:
+ *   2 + 2 zones give the four stacked buttons (on / up / down / off).
+ *
+ * 'sonoff-snzb-01m' — round 50 mm, 2 × 2 quadrants. 'sonoff-snzb-01p' — round
+ *   45 mm, single button (halves = 1, bottom half not rendered).
+ *   All Hue/Sonoff dimensions are approximate; see src/data/buttonModels.ts.
+ *
+ * Indicators (dot/dash/double-dot/triple-dot) are positioned near the inner or outer edge
  * of each half, axis-correct for the button orientation.
  */
 
 export type ZoneCount = 1 | 2 | 3
-export type IndicatorType = 'dot' | 'double-dot' | 'dash' | 'none'
-export type ButtonType = 'somrig' | 'bilresa'
+export type IndicatorType =
+  | 'dot'
+  | 'double-dot'
+  | 'triple-dot'
+  | 'dash'
+  | 'none'
+export type { ButtonType }
 
 export interface ZoneConfig {
   /** MDI icon path string (from @mdi/js) */
@@ -118,56 +131,10 @@ function getDashArray(
 }
 
 // ── Button geometry configs ───────────────────────────────────────────────────
+// Defined in src/data/buttonModels.ts (shared with the app shell).
 
-interface ButtonConfig {
-  W: number
-  H: number
-  outlinePath: string
-  /** 'portrait'  → halves are top/bottom, divided by a horizontal line at dividerPos (Y).
-   *               Zones within each half split left/right using zoneCenter (X).
-   *  'landscape' → halves are left/right, divided by a vertical line at dividerPos (X).
-   *               Zones within each half split top/bottom using zoneCenter (Y). */
-  layout: 'portrait' | 'landscape'
-  dividerPos: number // Y for portrait, X for landscape
-  zoneCenter: number // X for portrait (left/right zone split), Y for landscape (top/bottom zone split)
-}
-
-const SOMRIG_OUTLINE =
-  'M 20.59 0.09 C 27.92 0.09 30.72 0.74 30.72 0.74 C 30.72 0.74 33.07 1.03 35.15 2.67 ' +
-  'C 37.24 4.32 39.12 5.81 39.96 11.66 C 40.81 17.51 41.09 35.97 41.09 35.97 ' +
-  'C 41.09 35.97 40.81 54.43 39.96 60.27 C 39.12 66.12 37.24 67.61 35.15 69.26 ' +
-  'C 33.07 70.91 30.72 71.19 30.72 71.19 C 30.72 71.19 27.92 71.84 20.59 71.84 ' +
-  'C 13.26 71.84 10.45 71.19 10.45 71.19 C 10.45 71.19 8.11 70.91 6.02 69.26 ' +
-  'C 3.94 67.61 2.06 66.12 1.22 60.27 C 0.37 54.43 0.09 35.97 0.09 35.97 ' +
-  'C 0.09 35.97 0.37 17.51 1.22 11.66 C 2.06 5.81 3.94 4.32 6.02 2.67 ' +
-  'C 8.11 1.03 10.45 0.74 10.45 0.74 C 10.45 0.74 13.26 0.09 20.59 0.09 Z'
-
-// Vertical stadium outline: W=36.3, H=63.3, r=18.15 (= W/2 — fully rounded top/bottom)
-// Top arc:    (0,18.15) → (36.3,18.15) sweep=1 clockwise → bulges upward    ✓
-// Bottom arc: (36.3,45.15) → (0,45.15) sweep=1 clockwise → bulges downward  ✓
-const BILRESA_OUTLINE =
-  'M 0 18.15 A 18.15 18.15 0 0 1 36.3 18.15 L 36.3 45.15 A 18.15 18.15 0 0 1 0 45.15 Z'
-
-const BUTTON_CONFIGS: Record<ButtonType, ButtonConfig> = {
-  somrig: {
-    W: 41.2,
-    H: 71.9,
-    outlinePath: SOMRIG_OUTLINE,
-    layout: 'portrait',
-    dividerPos: 36.0,
-    zoneCenter: 20.2,
-  },
-  bilresa: {
-    W: 36.3,
-    H: 63.3,
-    outlinePath: BILRESA_OUTLINE,
-    layout: 'portrait',
-    dividerPos: 31.65, // H / 2
-    zoneCenter: 18.15, // W / 2
-  },
-}
-
-const config = computed(() => BUTTON_CONFIGS[props.buttonType])
+const config = computed(() => BUTTON_MODELS[props.buttonType])
+const showBottom = computed(() => config.value.halves === 2)
 
 // ── Indicator + icon constants (mm) ──────────────────────────────────────────
 const DOT_R = 0.75
@@ -203,12 +170,25 @@ function computeHalfZones(
   count: ZoneCount,
   halfStart: number,
   halfLength: number,
+  half: 0 | 1,
 ): Zone[] {
   const cfg = config.value
+  if (cfg.layout === 'stacked') {
+    const rh = halfLength / count
+    return Array.from({ length: count }, (_, row) => ({
+      x: 0,
+      y: halfStart + row * rh,
+      w: cfg.W,
+      h: rh,
+      cx: cfg.W / 2,
+      cy: halfStart + row * rh + rh / 2,
+    }))
+  }
   if (cfg.layout === 'portrait') {
     const yStart = halfStart
     const height = halfLength
-    const { W, zoneCenter } = cfg
+    const { W } = cfg
+    const zoneCenter = cfg.zoneCenters?.[half] ?? cfg.zoneCenter
     if (count === 1) {
       return [
         {
@@ -255,7 +235,8 @@ function computeHalfZones(
   } else {
     const xStart = halfStart
     const width = halfLength
-    const { H, zoneCenter } = cfg
+    const { H } = cfg
+    const zoneCenter = cfg.zoneCenters?.[half] ?? cfg.zoneCenter
     if (count === 1) {
       return [
         { x: xStart, y: 0, w: width, h: H, cx: xStart + width / 2, cy: H / 2 },
@@ -301,16 +282,16 @@ const topHalfLength = computed(() => config.value.dividerPos)
 const botHalfStart = computed(() => config.value.dividerPos)
 const botHalfLength = computed(() => {
   const cfg = config.value
-  return cfg.layout === 'portrait'
-    ? cfg.H - cfg.dividerPos
-    : cfg.W - cfg.dividerPos
+  return cfg.layout === 'landscape'
+    ? cfg.W - cfg.dividerPos
+    : cfg.H - cfg.dividerPos
 })
 
 const topZoneList = computed(() =>
-  computeHalfZones(props.topZones, 0, topHalfLength.value),
+  computeHalfZones(props.topZones, 0, topHalfLength.value, 0),
 )
 const botZoneList = computed(() =>
-  computeHalfZones(props.botZones, botHalfStart.value, botHalfLength.value),
+  computeHalfZones(props.botZones, botHalfStart.value, botHalfLength.value, 1),
 )
 
 // ── Sub-divider positions ─────────────────────────────────────────────────────
@@ -319,18 +300,37 @@ const botZoneList = computed(() =>
  * Portrait:  returns X positions for vertical lines spanning the given half.
  * Landscape: returns Y positions for horizontal lines spanning the given half.
  */
-function halfSubDividers(count: ZoneCount): number[] {
+function halfSubDividers(
+  count: ZoneCount,
+  half: 0 | 1,
+  start = 0,
+  length = 0,
+): number[] {
   const cfg = config.value
   if (count === 1) return []
+  if (cfg.layout === 'stacked') {
+    return Array.from(
+      { length: count - 1 },
+      (_, i) => start + (length / count) * (i + 1),
+    )
+  }
   if (cfg.layout === 'portrait') {
-    return count === 2 ? [cfg.zoneCenter] : [cfg.W / 3, (cfg.W / 3) * 2]
+    return count === 2
+      ? [cfg.zoneCenters?.[half] ?? cfg.zoneCenter]
+      : [cfg.W / 3, (cfg.W / 3) * 2]
   } else {
-    return count === 2 ? [cfg.zoneCenter] : [cfg.H / 3, (cfg.H / 3) * 2]
+    return count === 2
+      ? [cfg.zoneCenters?.[half] ?? cfg.zoneCenter]
+      : [cfg.H / 3, (cfg.H / 3) * 2]
   }
 }
 
-const topSubDividers = computed(() => halfSubDividers(props.topZones))
-const botSubDividers = computed(() => halfSubDividers(props.botZones))
+const topSubDividers = computed(() =>
+  halfSubDividers(props.topZones, 0, 0, topHalfLength.value),
+)
+const botSubDividers = computed(() =>
+  halfSubDividers(props.botZones, 1, botHalfStart.value, botHalfLength.value),
+)
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -351,7 +351,7 @@ function indicatorPos(
   position: 'inner' | 'outer',
 ): { cx: number; cy: number } {
   const cfg = config.value
-  if (cfg.layout === 'portrait') {
+  if (cfg.layout !== 'landscape') {
     const atBottom =
       (half === 'top' && position === 'inner') ||
       (half === 'bottom' && position === 'outer')
@@ -376,27 +376,22 @@ function indicatorPos(
 }
 
 /**
- * Returns the two dot positions for a double-dot indicator.
+ * Returns the dot positions for a multi-dot (double/triple) indicator.
  * Offset axis matches the button orientation so the dots sit side-by-side
- * along the same edge as a single dot would.
+ * along the same edge as a single dot would, centred on the single-dot spot.
  */
-function doubleDotPositions(
+function dotPositions(
   zone: Zone,
   half: 'top' | 'bottom',
   position: 'inner' | 'outer',
-): [{ cx: number; cy: number }, { cx: number; cy: number }] {
+  count: number,
+): { cx: number; cy: number }[] {
   const { cx, cy } = indicatorPos(zone, half, position)
-  if (config.value.layout === 'portrait') {
-    return [
-      { cx: cx - DOT_R * 2, cy },
-      { cx: cx + DOT_R * 2, cy },
-    ]
-  } else {
-    return [
-      { cx, cy: cy - DOT_R * 2 },
-      { cx, cy: cy + DOT_R * 2 },
-    ]
-  }
+  const horizontal = config.value.layout !== 'landscape'
+  return Array.from({ length: count }, (_, i) => {
+    const offset = (i - (count - 1) / 2) * DOT_R * 4
+    return horizontal ? { cx: cx + offset, cy } : { cx, cy: cy + offset }
+  })
 }
 
 /**
@@ -409,7 +404,7 @@ function dashRect(
   position: 'inner' | 'outer',
 ): { x: number; y: number; width: number; height: number } {
   const { cx, cy } = indicatorPos(zone, half, position)
-  if (config.value.layout === 'portrait') {
+  if (config.value.layout !== 'landscape') {
     return {
       x: cx - DASH_W / 2,
       y: cy - DASH_H / 2,
@@ -538,9 +533,9 @@ function computeLabelY(zone: Zone, cfg: ZoneConfig): number {
     <g :clip-path="`url(#${clipId})`">
 
       <!-- ── Centre divider ─────────────────────────────────────── -->
-      <!-- Portrait: horizontal line -->
+      <!-- Portrait/stacked: horizontal line -->
       <line
-        v-if="config.layout === 'portrait'"
+        v-if="config.layout !== 'landscape' && showBottom"
         x1="0" :y1="config.dividerPos"
         :x2="config.W" :y2="config.dividerPos"
         :stroke="horizontalSeparator?.color ?? strokeColor"
@@ -549,7 +544,7 @@ function computeLabelY(zone: Zone, cfg: ZoneConfig): number {
       />
       <!-- Landscape: vertical line -->
       <line
-        v-else
+        v-else-if="showBottom"
         :x1="config.dividerPos" y1="0"
         :x2="config.dividerPos" :y2="config.H"
         :stroke="horizontalSeparator?.color ?? strokeColor"
@@ -558,7 +553,18 @@ function computeLabelY(zone: Zone, cfg: ZoneConfig): number {
       />
 
       <!-- ── Top/left-half zone sub-dividers ───────────────────── -->
-      <template v-if="config.layout === 'portrait'">
+      <template v-if="config.layout === 'stacked'">
+        <line
+          v-for="hy in topSubDividers"
+          :key="`top-sdiv-${hy}`"
+          x1="0" :y1="hy"
+          :x2="config.W" :y2="hy"
+          :stroke="verticalSeparator?.color ?? strokeColor"
+          :stroke-width="verticalSeparator?.thickness ?? 0.3"
+          :stroke-dasharray="getDashArray(verticalSeparator?.style, verticalSeparator?.thickness ?? 0.3)"
+        />
+      </template>
+      <template v-else-if="config.layout === 'portrait'">
         <!-- Vertical lines spanning the top half -->
         <line
           v-for="vx in topSubDividers"
@@ -584,7 +590,19 @@ function computeLabelY(zone: Zone, cfg: ZoneConfig): number {
       </template>
 
       <!-- ── Bottom/right-half zone sub-dividers ───────────────── -->
-      <template v-if="config.layout === 'portrait'">
+      <template v-if="!showBottom" />
+      <template v-else-if="config.layout === 'stacked'">
+        <line
+          v-for="hy in botSubDividers"
+          :key="`bot-sdiv-${hy}`"
+          x1="0" :y1="hy"
+          :x2="config.W" :y2="hy"
+          :stroke="verticalSeparator?.color ?? strokeColor"
+          :stroke-width="verticalSeparator?.thickness ?? 0.3"
+          :stroke-dasharray="getDashArray(verticalSeparator?.style, verticalSeparator?.thickness ?? 0.3)"
+        />
+      </template>
+      <template v-else-if="config.layout === 'portrait'">
         <!-- Vertical lines spanning the bottom half -->
         <line
           v-for="vx in botSubDividers"
@@ -640,15 +658,12 @@ function computeLabelY(zone: Zone, cfg: ZoneConfig): number {
           :r="DOT_R"
           :fill="iconColor"
         />
-        <g v-else-if="topZoneConfig[i]?.indicator === 'double-dot'">
+        <g v-else-if="topZoneConfig[i]?.indicator === 'double-dot' || topZoneConfig[i]?.indicator === 'triple-dot'">
           <circle
-            :cx="doubleDotPositions(zone, 'top', topIndicatorPos)[0].cx"
-            :cy="doubleDotPositions(zone, 'top', topIndicatorPos)[0].cy"
-            :r="DOT_R" :fill="iconColor"
-          />
-          <circle
-            :cx="doubleDotPositions(zone, 'top', topIndicatorPos)[1].cx"
-            :cy="doubleDotPositions(zone, 'top', topIndicatorPos)[1].cy"
+            v-for="(d, di) in dotPositions(zone, 'top', topIndicatorPos, topZoneConfig[i]?.indicator === 'triple-dot' ? 3 : 2)"
+            :key="di"
+            :cx="d.cx"
+            :cy="d.cy"
             :r="DOT_R" :fill="iconColor"
           />
         </g>
@@ -664,7 +679,7 @@ function computeLabelY(zone: Zone, cfg: ZoneConfig): number {
       </g>
 
       <!-- ── Bottom/right-half zones ───────────────────────────── -->
-      <g v-for="(zone, i) in botZoneList" :key="`bot-${i}`">
+      <g v-for="(zone, i) in (showBottom ? botZoneList : [])" :key="`bot-${i}`">
         <g
           v-if="botZoneConfig[i]?.icon"
           :transform="iconTransform(iconRenderCenter(zone, botZoneConfig[i])[0], iconRenderCenter(zone, botZoneConfig[i])[1], botZoneConfig[i].iconSize, botZoneConfig[i].iconRotation)"
@@ -694,15 +709,12 @@ function computeLabelY(zone: Zone, cfg: ZoneConfig): number {
           :r="DOT_R"
           :fill="iconColor"
         />
-        <g v-else-if="botZoneConfig[i]?.indicator === 'double-dot'">
+        <g v-else-if="botZoneConfig[i]?.indicator === 'double-dot' || botZoneConfig[i]?.indicator === 'triple-dot'">
           <circle
-            :cx="doubleDotPositions(zone, 'bottom', botIndicatorPos)[0].cx"
-            :cy="doubleDotPositions(zone, 'bottom', botIndicatorPos)[0].cy"
-            :r="DOT_R" :fill="iconColor"
-          />
-          <circle
-            :cx="doubleDotPositions(zone, 'bottom', botIndicatorPos)[1].cx"
-            :cy="doubleDotPositions(zone, 'bottom', botIndicatorPos)[1].cy"
+            v-for="(d, di) in dotPositions(zone, 'bottom', botIndicatorPos, botZoneConfig[i]?.indicator === 'triple-dot' ? 3 : 2)"
+            :key="di"
+            :cx="d.cx"
+            :cy="d.cy"
             :r="DOT_R" :fill="iconColor"
           />
         </g>

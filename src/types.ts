@@ -1,7 +1,10 @@
-export type ActionType = 'single' | 'double' | 'hold' | 'none'
+export type ActionType = 'single' | 'double' | 'triple' | 'hold' | 'none'
 export type IndicatorPosition = 'inner' | 'outer'
 export type LineStyle = 'solid' | 'dashed' | 'dotted'
-export type ButtonType = 'somrig' | 'bilresa'
+
+import type { ButtonType } from './data/buttonModels'
+
+export type { ButtonType }
 
 export interface SeparatorStyle {
   thickness: number // stroke-width in mm (e.g., 0.3)

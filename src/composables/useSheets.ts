@@ -1,4 +1,5 @@
 import { computed, ref, toRaw, watch } from 'vue'
+import { BUTTON_MODELS, isButtonType } from '../data/buttonModels'
 import type {
   ActionType,
   ActionZone,
@@ -38,11 +39,21 @@ const DEFAULT_SEPARATOR: SeparatorStyle = {
   style: 'solid',
 }
 
-function createDefaultButtonInlay(id: string): ButtonInlay {
+function createDefaultZones(count: number): ActionZone[] {
+  return Array.from({ length: count }, (_, i) =>
+    createDefaultZone(DEFAULT_ZONE_TYPES[i] ?? 'single'),
+  )
+}
+
+function createDefaultButtonInlay(
+  id: string,
+  buttonType: ButtonType = 'somrig',
+): ButtonInlay {
+  const [topCount, botCount] = BUTTON_MODELS[buttonType].defaultZones
   return {
     id,
-    top: { zones: [createDefaultZone()], indicatorPosition: 'inner' },
-    bottom: { zones: [createDefaultZone()], indicatorPosition: 'inner' },
+    top: { zones: createDefaultZones(topCount), indicatorPosition: 'inner' },
+    bottom: { zones: createDefaultZones(botCount), indicatorPosition: 'inner' },
     horizontalSeparator: { ...DEFAULT_SEPARATOR },
     verticalSeparator: { ...DEFAULT_SEPARATOR },
   }
@@ -57,7 +68,7 @@ function createDefaultSheet(
     id,
     name,
     buttonType,
-    buttons: [createDefaultButtonInlay(`${id}-btn-1`)],
+    buttons: [createDefaultButtonInlay(`${id}-btn-1`, buttonType)],
   }
 }
 
@@ -86,6 +97,8 @@ function isValidSheet(value: unknown): value is Sheet {
   if (typeof value.name !== 'string') return false
   if (!Array.isArray(value.buttons) || !value.buttons.every(isValidButton))
     return false
+  // Saves from newer/older builds may carry an unknown model — fall back.
+  if (!isButtonType(value.buttonType)) value.buttonType = 'somrig'
   return true
 }
 
@@ -277,7 +290,10 @@ export function useSheets() {
   function addButton(sheetId: string): ButtonInlay | null {
     const sheet = sheets.value.find((s) => s.id === sheetId)
     if (!sheet) return null
-    const btn = createDefaultButtonInlay(`${sheetId}-btn-${nextId()}`)
+    const btn = createDefaultButtonInlay(
+      `${sheetId}-btn-${nextId()}`,
+      sheet.buttonType,
+    )
     sheet.buttons.push(btn)
     return btn
   }
@@ -382,6 +398,17 @@ export function useSheets() {
     const sheet = sheets.value.find((s) => s.id === sheetId)
     if (!sheet) return
     sheet.buttonType = buttonType
+    // Untouched buttons adopt the new model's default zone layout; edited
+    // buttons keep their content.
+    const [topCount, botCount] = BUTTON_MODELS[buttonType].defaultZones
+    for (const btn of sheet.buttons) {
+      const pristine = [...btn.top.zones, ...btn.bottom.zones].every(
+        (z) => !z.icon && !z.label,
+      )
+      if (!pristine) continue
+      btn.top.zones = createDefaultZones(topCount)
+      btn.bottom.zones = createDefaultZones(botCount)
+    }
   }
 
   return {
